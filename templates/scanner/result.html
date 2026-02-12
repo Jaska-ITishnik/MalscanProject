@@ -1,0 +1,109 @@
+{% extends "scanner/base.html" %}
+{% block title %}Result — MalScan{% endblock %}
+
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2>Result</h2>
+
+      <div class="score-wrap">
+        <div class="score">
+          <div class="score-number">{{ scan.score_percent }}%</div>
+          <div class="badge badge-{{ scan.verdict }}">{{ scan.verdict|upper }}</div>
+        </div>
+        <div class="muted small">
+          Model: {{ scan.model_version }} • {{ scan.created_at }}
+        </div>
+      </div>
+
+      <hr/>
+
+      <h3>File</h3>
+      <div class="kv">
+        <div><span class="k">Name</span><span class="v">{{ scan.sample.original_name }}</span></div>
+        <div><span class="k">SHA-256</span><span class="v mono">{{ scan.sample.sha256 }}</span></div>
+        <div><span class="k">Size</span><span class="v">{{ scan.sample.size_bytes }} bytes</span></div>
+        <div><span class="k">MIME</span><span class="v">{{ scan.sample.mime_type }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Why?</h2>
+      <p class="muted">Top model-driving features + concrete evidence.</p>
+
+      <h3>Top features</h3>
+      <ul class="list">
+        {% for item in scan.reasons_json.top_features %}
+          <li>
+            <span class="mono">{{ item.feature }}</span>
+            <span class="muted small">value={{ item.value }}</span>
+            {% if item.contribution %}
+              <span class="pill">contrib={{ item.contribution|floatformat:4 }}</span>
+            {% endif %}
+            {% if item.importance %}
+              <span class="pill">imp={{ item.importance|floatformat:4 }}</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+
+      <h3>Evidence</h3>
+      <div class="evidence">
+        <div>
+          <strong>Suspicious keywords</strong>
+          <div class="chips">
+            {% for kw in scan.reasons_json.evidence.suspicious_keywords %}
+              <span class="chip">{{ kw }}</span>
+            {% empty %}
+              <span class="muted small">None</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <strong>URLs</strong>
+          <ul class="list">
+            {% for u in scan.reasons_json.evidence.urls %}
+              <li class="mono small">{{ u }}</li>
+            {% empty %}
+              <li class="muted small">None</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div>
+          <strong>IPs</strong>
+          <ul class="list">
+            {% for ip in scan.reasons_json.evidence.ips %}
+              <li class="mono small">{{ ip }}</li>
+            {% empty %}
+              <li class="muted small">None</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <hr/>
+
+      <canvas id="riskChart" height="160"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Raw JSON</h2>
+    <details>
+      <summary>Features</summary>
+      <pre class="pre">{{ scan.features_json|safe }}</pre>
+    </details>
+    <details>
+      <summary>Reasons</summary>
+      <pre class="pre">{{ scan.reasons_json|safe }}</pre>
+    </details>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.__SCAN_SCORE__ = {{ scan.score_percent|default:0 }};
+</script>
+{% endblock %}

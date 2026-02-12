@@ -1,0 +1,21 @@
+{% extends "scanner/base.html" %}
+{% block title %}Scan file — MalScan{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h1>Upload a file for analysis</h1>
+    <p class="muted">The file is analyzed statically. It is never executed.</p>
+
+    <form method="post" enctype="multipart/form-data" class="upload-form">
+      {% csrf_token %}
+      <div class="field">
+        {{ form.file }}
+      </div>
+      <button class="btn" type="submit">Scan</button>
+    </form>
+
+    <div class="note">
+      <strong>Tip:</strong> Train the ML model first (once): <code>python manage.py train_model --csv dataset.csv</code>
+    </div>
+  </div>
+{% endblock %}
