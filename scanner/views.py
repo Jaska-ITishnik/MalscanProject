@@ -1,18 +1,18 @@
 import hashlib
-import magic
 
+import magic
 from django.conf import settings
 from django.urls import reverse
 from django.views.generic import FormView, DetailView, ListView
-
-from .forms import UploadForm
-from .models import Sample, Scan
 
 from mlapp.features import extract_features
 from mlapp.model import (
     load_model, load_schema, vectorize, predict_proba,
     verdict_from_score, top_feature_contributions
 )
+from .forms import UploadForm
+from .models import Sample, Scan
+
 
 def sha256_file(path: str) -> str:
     h = hashlib.sha256()
@@ -20,6 +20,7 @@ def sha256_file(path: str) -> str:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
 
 class UploadScanView(FormView):
     template_name = "scanner/upload.html"
@@ -76,11 +77,13 @@ class UploadScanView(FormView):
     def get_success_url(self):
         return reverse("scanner:result", kwargs={"scan_id": self._scan_id})
 
+
 class ScanDetailView(DetailView):
     model = Scan
     pk_url_kwarg = "scan_id"
     context_object_name = "scan"
     template_name = "scanner/result.html"
+
 
 class ScanHistoryView(ListView):
     model = Scan
