@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}MalScan • Home{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Static Malware Scoring (APK + PDF)</h1>
+  <p>
+    Upload a file — we compute an ML-based maliciousness score using EMBERv3/thrember features.
+    No registration. Files are not executed.
+  </p>
+  <div class="hero-actions">
+    <a class="btn primary" href="/scan/">Scan a file</a>
+    <a class="btn" href="/history/">View history</a>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Supported now</h3>
+      <p><b>APK</b> and <b>PDF</b> only (first MVP). Add more via new models.</p>
+    </div>
+    <div class="card">
+      <h3>Output</h3>
+      <p>Score (%), verdict, and top contributing vector indices.</p>
+    </div>
+    <div class="card">
+      <h3>Dataset</h3>
+      <p>Trained on EMBER2024 vectorized features (train/test split by time).</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

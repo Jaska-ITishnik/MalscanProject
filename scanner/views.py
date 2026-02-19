@@ -1,30 +1,24 @@
-import hashlib
+from __future__ import annotations
 
 import magic
 from django.conf import settings
-from django.urls import reverse
-from django.views.generic import FormView, DetailView, ListView
+from django.urls import reverse_lazy
+from django.views.generic import FormView, DetailView, ListView, TemplateView
 
-from mlapp.features import extract_features
-from mlapp.model import (
-    load_model, load_schema, vectorize, predict_proba,
-    verdict_from_score, top_feature_contributions
-)
-from .forms import UploadForm
+from mlapp.inference import infer
+from .forms import UploadFileForm
 from .models import Sample, Scan
+from .utils import sha256_file
 
 
-def sha256_file(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
+class HomeView(TemplateView):
+    template_name = "scanner/home.html"
 
 
 class UploadScanView(FormView):
     template_name = "scanner/upload.html"
-    form_class = UploadForm
+    form_class = UploadFileForm
+    success_url = reverse_lazy("scanner:history")
 
     def form_valid(self, form):
         uploaded = form.cleaned_data["file"]
@@ -35,10 +29,10 @@ class UploadScanView(FormView):
             size_bytes=uploaded.size,
             sha256="",
             mime_type="",
+            detected_type="",
         )
 
         file_path = sample.stored_file.path
-
         sample.sha256 = sha256_file(file_path)
         try:
             sample.mime_type = magic.from_file(file_path, mime=True) or ""
@@ -46,50 +40,38 @@ class UploadScanView(FormView):
             sample.mime_type = ""
         sample.save()
 
-        model = load_model(settings.ML_MODEL_PATH)
-        feature_names = load_schema(settings.ML_SCHEMA_PATH)
+        res = infer(
+            file_path=file_path,
+            mime_type=sample.mime_type,
+            apk_model_path=settings.APK_MODEL_PATH,
+            pdf_model_path=settings.PDF_MODEL_PATH,
+        )
 
-        with open(file_path, "rb") as f:
-            data = f.read()
-
-        features, evidence = extract_features(data, mime_type=sample.mime_type)
-        x = vectorize(features, feature_names)
-        p = predict_proba(model, x)
-
-        score = int(round(p * 100))
-        verdict = verdict_from_score(score)
-        top_feats = top_feature_contributions(model, x, feature_names, top_k=8)
-
-        reasons = {"top_features": top_feats, "evidence": evidence}
+        sample.detected_type = res.detected_type
+        sample.save(update_fields=["detected_type"])
 
         scan = Scan.objects.create(
             sample=sample,
-            score_percent=score,
-            verdict=verdict,
+            score_percent=res.score_percent,
+            verdict=res.verdict,
+            model_used=res.model_used,
             model_version="v1",
-            features_json=features,
-            reasons_json=reasons,
+            reasons_json=res.reasons,
         )
 
-        self._scan_id = scan.id
+        self.success_url = reverse_lazy("scanner:scan_detail", kwargs={"pk": scan.id})
         return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse("scanner:result", kwargs={"scan_id": self._scan_id})
 
 
 class ScanDetailView(DetailView):
     model = Scan
-    pk_url_kwarg = "scan_id"
+    template_name = "scanner/scan_detail.html"
     context_object_name = "scan"
-    template_name = "scanner/result.html"
 
 
-class ScanHistoryView(ListView):
+class HistoryView(ListView):
     model = Scan
-    context_object_name = "scans"
     template_name = "scanner/history.html"
-    paginate_by = 50
-
-    def get_queryset(self):
-        return Scan.objects.select_related("sample").order_by("-created_at")
+    context_object_name = "scans"
+    paginate_by = 20
+    ordering = ["-created_at"]

@@ -1,26 +1,43 @@
 from django.db import models
+from django.db.models import TextChoices
+
 
 class Sample(models.Model):
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    original_name = models.CharField(max_length=255)
-    stored_file = models.FileField(upload_to="uploads/")
-    size_bytes = models.BigIntegerField()
-    sha256 = models.CharField(max_length=64, db_index=True)
-    mime_type = models.CharField(max_length=128, blank=True)
+    original_name = models.CharField(max_length=255, verbose_name="Fayl nomi")
+    stored_file = models.FileField(upload_to="uploads/%Y/%m/%d/", verbose_name="Fayl")
+    size_bytes = models.BigIntegerField(default=0, verbose_name="Hajm (bayt)")
+    sha256 = models.CharField(max_length=64, blank=True, default="", verbose_name="SHA-256")
+    mime_type = models.CharField(max_length=120, blank=True, default="", verbose_name="MIME")
+    detected_type = models.CharField(max_length=16, blank=True, default="", verbose_name="Turi")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Yaratilgan")
 
-    def __str__(self):
-        return f"{self.original_name} ({self.sha256[:10]}...)"
+    class Meta:
+        verbose_name = "Namuna"
+        verbose_name_plural = "Namunalar"
+
+    def __str__(self) -> str:
+        return self.original_name
+
 
 class Scan(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name="scans")
+    class VerdictChoice(TextChoices):
+        BENIGN = "benign", "Toza"
+        SUSPICIOUS = "suspicious", "Shubhali"
+        MALICIOUS = "malicious", "Zararli"
+        UNKNOWN = "unknown", "Noma’lum"
 
-    score_percent = models.IntegerField()
-    verdict = models.CharField(max_length=32)
-    model_version = models.CharField(max_length=64, default="v1")
+    sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name="scans", verbose_name="Namuna")
+    score_percent = models.IntegerField(default=0, verbose_name="Ball (%)")
+    verdict = models.CharField(max_length=16, choices=VerdictChoice.choices, default=VerdictChoice.UNKNOWN,  # noqa
+                               verbose_name="Xulosa", )
+    model_used = models.CharField(max_length=32, blank=True, default="", verbose_name="Model")
+    model_version = models.CharField(max_length=32, blank=True, default="v1", verbose_name="Versiya")
+    reasons_json = models.JSONField(default=dict, blank=True, verbose_name="Sabablar")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Tekshiruv vaqti")
 
-    features_json = models.JSONField(default=dict)
-    reasons_json = models.JSONField(default=dict)
+    class Meta:
+        verbose_name = "Tekshiruv"
+        verbose_name_plural = "Tekshiruvlar"
 
-    def __str__(self):
-        return f"Scan {self.id} - {self.verdict} {self.score_percent}%"
+    def __str__(self) -> str:
+        return f"{self.sample.original_name} — {self.verdict} ({self.score_percent}%)"

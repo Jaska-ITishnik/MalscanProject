@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% block title %}MalScan{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="brand" href="/">MalScan</a>
+      <nav class="nav">
+        <a href="/scan/">Scan</a>
+        <a href="/history/">History</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <span>Open-source static scanner • EMBERv3 (thrember) • APK/PDF MVP</span>
+    </div>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

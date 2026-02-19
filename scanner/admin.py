@@ -3,7 +3,7 @@ from .models import Sample, Scan
 
 @admin.register(Sample)
 class SampleAdmin(admin.ModelAdmin):
-    list_display = ("id", "original_name", "sha256", "size_bytes", "mime_type", "uploaded_at")
+    list_display = ("id", "original_name", "sha256", "size_bytes", "mime_type", "created_at")
     search_fields = ("original_name", "sha256")
 
 @admin.register(Scan)

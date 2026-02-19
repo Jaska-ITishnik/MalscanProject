@@ -1,47 +1,38 @@
-{% extends "scanner/base.html" %}
-{% block title %}History — MalScan{% endblock %}
-
+{% extends "base.html" %}
+{% block title %}MalScan • History{% endblock %}
 {% block content %}
-  <div class="card">
-    <h1>History</h1>
-    <p class="muted">Latest scans (paginated).</p>
+<h2>Scan history</h2>
 
-    <div class="table">
-      <div class="thead">
-        <div>Time</div>
-        <div>File</div>
-        <div>SHA-256</div>
-        <div>Verdict</div>
-        <div>Score</div>
-      </div>
-
-      {% for s in scans %}
-      <a class="trow" href="{% url 'scanner:result' s.id %}">
-        <div class="small">{{ s.created_at }}</div>
+{% if scans %}
+  <div class="table">
+    <div class="thead">
+      <div>Time</div>
+      <div>File</div>
+      <div>Type</div>
+      <div>Verdict</div>
+      <div>Score</div>
+    </div>
+    {% for s in scans %}
+      <a class="trow" href="/scan/{{ s.id }}/">
+        <div class="muted">{{ s.created_at|date:"Y-m-d H:i" }}</div>
         <div>{{ s.sample.original_name }}</div>
-        <div class="mono small">{{ s.sample.sha256|slice:":16" }}…</div>
-        <div><span class="badge badge-{{ s.verdict }}">{{ s.verdict }}</span></div>
+        <div class="mono">{{ s.sample.detected_type }}</div>
+        <div class="badge {{ s.verdict }}">{{ s.verdict }}</div>
         <div class="mono">{{ s.score_percent }}%</div>
       </a>
-      {% empty %}
-      <div class="muted">No scans yet.</div>
-      {% endfor %}
-    </div>
-
-    <div class="pagination">
-      {% if is_paginated %}
-        <div class="muted small">
-          Page {{ page_obj.number }} of {{ paginator.num_pages }}
-        </div>
-        <div class="pager">
-          {% if page_obj.has_previous %}
-            <a class="pager-link" href="?page={{ page_obj.previous_page_number }}">Prev</a>
-          {% endif %}
-          {% if page_obj.has_next %}
-            <a class="pager-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-          {% endif %}
-        </div>
-      {% endif %}
-    </div>
+    {% endfor %}
   </div>
+
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a class="btn" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+    {% endif %}
+    <span class="muted">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="btn" href="?page={{ page_obj.next_page_number }}">Next</a>
+    {% endif %}
+  </div>
+{% else %}
+  <p class="muted">No scans yet. <a href="/scan/">Scan your first file</a>.</p>
+{% endif %}
 {% endblock %}
